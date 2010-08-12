@@ -133,6 +133,12 @@ env_options = [
         default=None,
         help="password for use with authentication and/or sudo"
     ),
+    
+    make_option('--pass',
+        action='store_true',
+        default=False,
+        help="request password"
+    ),
 
     make_option('-H', '--hosts',
         default=[],

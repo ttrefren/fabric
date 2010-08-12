@@ -182,12 +182,6 @@ def parse_options():
         metavar='COMMAND',
         help="print detailed info about a given command and exit"
     )
-    
-    make_option('--pass',
-        action='store_true',
-        default=False,
-        help="request password before execution"
-    )
 
     #
     # Add in options which are also destined to show up as `env` vars.
@@ -371,7 +365,7 @@ def main():
     try:
         # Parse command line options
         parser, options, arguments = parse_options()
-        
+
         # Handle regular args vs -- args
         arguments = parser.largs
         remainder_arguments = parser.rargs
@@ -381,12 +375,16 @@ def main():
         # post-parsing, since so many things hinge on the values in env.
         for option in env_options:
             state.env[option.dest] = getattr(options, option.dest)
-
+        
         # Handle --hosts, --roles (comma separated string => list)
         for key in ['hosts', 'roles']:
             if key in state.env and isinstance(state.env[key], str):
                 state.env[key] = state.env[key].split(',')
         
+        # Handle --pass (make password request)
+        if 'pass' in state.env and state.env['pass'] and not state.env.get('password'):
+            state.env['password'] = getpass.getpass()
+                    
         # Handle output control level show/hide
         update_output_levels(show=options.show, hide=options.hide)
 
@@ -394,10 +392,6 @@ def main():
         if options.show_version:
             print("Fabric %s" % state.env.version)
             sys.exit(0)
-
-        # Handle --pass (make password request)
-        if 'pass' in state.env and state.env['pass'] and not state.env.get('password'):
-            state.env['password'] = getpass.getpass()
                 
         # Handle case where we were called bare, i.e. just "fab", and print
         # a help message.
