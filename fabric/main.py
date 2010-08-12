@@ -13,6 +13,7 @@ from operator import add
 from optparse import OptionParser
 import os
 import sys
+import getpass
 
 from fabric import api # For checking callables against the API 
 from fabric.contrib import console, files, project # Ditto
@@ -153,7 +154,7 @@ def parse_options():
     #
 
     parser = OptionParser(usage="fab [options] <command>[:arg1,arg2=val2,host=foo,hosts='h1;h2',...] ...")
-
+    
     #
     # Define options that don't become `env` vars (typically ones which cause
     # Fabric to do something other than its normal execution, such as --version)
@@ -180,6 +181,12 @@ def parse_options():
     parser.add_option('-d', '--display',
         metavar='COMMAND',
         help="print detailed info about a given command and exit"
+    )
+    
+    make_option('--pass',
+        action='store_true',
+        default=False,
+        help="request password before execution"
     )
 
     #
@@ -364,7 +371,7 @@ def main():
     try:
         # Parse command line options
         parser, options, arguments = parse_options()
-
+        
         # Handle regular args vs -- args
         arguments = parser.largs
         remainder_arguments = parser.rargs
@@ -379,7 +386,7 @@ def main():
         for key in ['hosts', 'roles']:
             if key in state.env and isinstance(state.env[key], str):
                 state.env[key] = state.env[key].split(',')
-
+        
         # Handle output control level show/hide
         update_output_levels(show=options.show, hide=options.hide)
 
@@ -388,6 +395,10 @@ def main():
             print("Fabric %s" % state.env.version)
             sys.exit(0)
 
+        # Handle --pass (make password request)
+        if 'pass' in state.env and state.env['pass'] and not state.env.get('password'):
+            state.env['password'] = getpass.getpass()
+                
         # Handle case where we were called bare, i.e. just "fab", and print
         # a help message.
         if not (options.list_commands or options.display or arguments
